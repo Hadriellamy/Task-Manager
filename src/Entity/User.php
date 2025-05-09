@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -30,6 +32,37 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\Column]
     private ?string $password = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $prenom = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $nom = null;
+
+    /**
+     * @var Collection<int, Task>
+     */
+    #[ORM\OneToMany(targetEntity: Task::class, mappedBy: 'creator')]
+    private Collection $tasksCreated;
+
+    /**
+     * @var Collection<int, Task>
+     */
+    #[ORM\ManyToMany(targetEntity: Task::class, inversedBy: 'sharedWith')]
+    private Collection $tasksSharedWithMe;
+
+    /**
+     * @var Collection<int, Comment>
+     */
+    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'author')]
+    private Collection $comments;
+
+    public function __construct()
+    {
+        $this->tasksCreated = new ArrayCollection();
+        $this->tasksSharedWithMe = new ArrayCollection();
+        $this->comments = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -102,5 +135,113 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
+    }
+
+    public function getPrenom(): ?string
+    {
+        return $this->prenom;
+    }
+
+    public function setPrenom(string $prenom): static
+    {
+        $this->prenom = $prenom;
+
+        return $this;
+    }
+
+    public function getNom(): ?string
+    {
+        return $this->nom;
+    }
+
+    public function setNom(string $nom): static
+    {
+        $this->nom = $nom;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Task>
+     */
+    public function getTasksCreated(): Collection
+    {
+        return $this->tasksCreated;
+    }
+
+    public function addTasksCreated(Task $tasksCreated): static
+    {
+        if (!$this->tasksCreated->contains($tasksCreated)) {
+            $this->tasksCreated->add($tasksCreated);
+            $tasksCreated->setCreator($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTasksCreated(Task $tasksCreated): static
+    {
+        if ($this->tasksCreated->removeElement($tasksCreated)) {
+            // set the owning side to null (unless already changed)
+            if ($tasksCreated->getCreator() === $this) {
+                $tasksCreated->setCreator(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Task>
+     */
+    public function getTasksSharedWithMe(): Collection
+    {
+        return $this->tasksSharedWithMe;
+    }
+
+    public function addTasksSharedWithMe(Task $tasksSharedWithMe): static
+    {
+        if (!$this->tasksSharedWithMe->contains($tasksSharedWithMe)) {
+            $this->tasksSharedWithMe->add($tasksSharedWithMe);
+        }
+
+        return $this;
+    }
+
+    public function removeTasksSharedWithMe(Task $tasksSharedWithMe): static
+    {
+        $this->tasksSharedWithMe->removeElement($tasksSharedWithMe);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Comment>
+     */
+    public function getComments(): Collection
+    {
+        return $this->comments;
+    }
+
+    public function addComment(Comment $comment): static
+    {
+        if (!$this->comments->contains($comment)) {
+            $this->comments->add($comment);
+            $comment->setAuthor($this);
+        }
+
+        return $this;
+    }
+
+    public function removeComment(Comment $comment): static
+    {
+        if ($this->comments->removeElement($comment)) {
+            // set the owning side to null (unless already changed)
+            if ($comment->getAuthor() === $this) {
+                $comment->setAuthor(null);
+            }
+        }
+
+        return $this;
     }
 }
